@@ -1,0 +1,3 @@
+*/4 * * * * /refresh_leader.sh > /proc/1/fd/1 2>/proc/1/fd/2
+*/1 * * * * /terminate_node.sh > /proc/1/fd/1 2>/proc/1/fd/2
+*/5 * * * * /reaper.sh > /proc/1/fd/1 2>/proc/1/fd/2

@@ -20,4 +20,4 @@ RUN chmod +x /terminate_node.sh
 
 WORKDIR /
 
-CMD ["crond", "-n"]
+CMD ["crond", "-n", "-s", "-p"]

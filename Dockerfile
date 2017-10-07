@@ -14,6 +14,7 @@ COPY crontab /var/spool/cron/root
 RUN chmod 0644 /var/spool/cron/root
 
 RUN touch /var/log/cron.log
+RUN ln -sf /proc/1/fd/1 /var/log/cron.log
 
 COPY reaper.sh /
 COPY refresh_leader.sh /

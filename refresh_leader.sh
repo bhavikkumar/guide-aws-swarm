@@ -1,7 +1,7 @@
 #!/bin/bash
 # this script refreshes the swarm primary manager in dynamodb if it has changed.
 # This comes from Docker for AWS
-
+echo "refresh_leader: Running..."
 export PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
 export REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 
@@ -34,3 +34,4 @@ if [[ "$IS_LEADER" == "true" ]]; then
             --item '{"id":{"S": "worker_join_token"},"value": {"S":"'"$WORKER_TOKEN"'"}}'
     fi
 fi
+echo "refresh_leader: Done"

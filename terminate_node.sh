@@ -29,7 +29,7 @@ for((i=0;i<$COUNT;i++)); do
         if [[ $NODE_COUNT -gt 1 ]]; then
           # Get the node id and type from its tag
           NODE_ID=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=node-id" --region $REGION --output=json | jq -r .Tags[0].Value)
-          NODE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=swarm-node-type" --region $REGION --output=json | jq -r .Tags[0].Value)
+          NODE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=swarm-node-type" --region us-west-2 --output=json | jq -r .Tags[0].Value)
 
           echo "terminate_node: Removing $NODE_ID which is a $NODE_TYPE from the swarm"
           if [ "$NODE_TYPE" == "manager" ]; then

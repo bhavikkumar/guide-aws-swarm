@@ -27,4 +27,4 @@ RUN chmod +x /entry.sh
 
 WORKDIR /
 
-CMD ["/entry.sh", "&&" "crond", "-n", "-p"]
+CMD ["/entry.sh"]

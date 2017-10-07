@@ -9,10 +9,9 @@ IS_LEADER=$(docker node inspect self -f '{{ .ManagerStatus.Leader }}')
 
 if [[ "$IS_LEADER" == "true" ]]; then
     # we are the leader, we only need to call once, so we only call from the current leader.
-    CURRENT_MANAGER=$(aws dynamodb get-item --region $REGION --table-name $DYNAMODB_TABLE --key '{"id":{"S": "primary_manager"}}')
-    CURRENT_MANAGER_IP=$(echo $CURRENT_MANAGER_IP | jq -r '.Item.value.S')
+    CURRENT_MANAGER_IP=$(aws dynamodb get-item --region $REGION --table-name $DYNAMODB_TABLE --key '{"id":{"S": "primary_manager"}}' | jq -r '.Item.value.S')
 
-    if [[ "$CURRENT_MANAGER_IP" != "$PRIVATE_IP" ]]; then
+    if [ "$CURRENT_MANAGER_IP" != "$PRIVATE_IP" ]; then
         echo "refreash_leader: Primary Manager has changed, updating dynamodb with new IP From $CURRENT_MANAGER_IP to $PRIVATE_IP"
         aws dynamodb put-item \
             --table-name $DYNAMODB_TABLE \
@@ -32,6 +31,8 @@ if [[ "$IS_LEADER" == "true" ]]; then
             --table-name $DYNAMODB_TABLE \
             --region $REGION \
             --item '{"id":{"S": "worker_join_token"},"value": {"S":"'"$WORKER_TOKEN"'"}}'
+    else
+      echo "refresh_leader: Primary manager ($CURRENT_MANAGER_IP) has not changed."
     fi
 fi
 echo "refresh_leader: Done"

@@ -11,7 +11,7 @@ if [[ "$IS_LEADER" == "true" ]]; then
     # we are the leader, we only need to call once, so we only call from the current leader.
     CURRENT_MANAGER_IP=$(aws dynamodb get-item --region $REGION --table-name $DYNAMODB_TABLE --key '{"id":{"S": "primary_manager"}}' | jq -r '.Item.value.S')
 
-    if [ "$CURRENT_MANAGER_IP" != "$PRIVATE_IP" ]; then
+    if [[ "$CURRENT_MANAGER_IP" != "$PRIVATE_IP" ]]; then
         echo "refreash_leader: Primary Manager has changed, updating dynamodb with new IP From $CURRENT_MANAGER_IP to $PRIVATE_IP"
         aws dynamodb put-item \
             --table-name $DYNAMODB_TABLE \

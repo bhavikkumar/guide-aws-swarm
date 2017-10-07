@@ -7,8 +7,8 @@ RUN yum install -y jq
 RUN yum install -y cronie
 RUN pip-3.4 install awscli
 
-COPY crontab /var/spool/cron/root
-RUN chmod 0644 /var/spool/cron/root
+COPY crontab /etc/cron.d/guide-aws-swarm
+RUN chmod 0644 /etc/cron.d/guide-aws-swarm
 
 COPY reaper.sh /
 COPY refresh_leader.sh /

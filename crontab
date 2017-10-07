@@ -1,3 +1,9 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+HOME=/
+
+# Run guide aws scripts
 */4 * * * * root /refresh_leader.sh > /proc/1/fd/1 2>/proc/1/fd/2
 */1 * * * * root /terminate_node.sh > /proc/1/fd/1 2>/proc/1/fd/2
 */5 * * * * root /reaper.sh > /proc/1/fd/1 2>/proc/1/fd/2

@@ -20,14 +20,14 @@ for((i=0;i<$COUNT;i++)); do
   INSTANCE=$(echo $BODY | jq --raw-output '.EC2InstanceId')
 
   # If it is a termination message and its not myself, then we will handle it.
-  if [[ $LIFECYCLE == 'autoscaling:EC2_INSTANCE_TERMINATING' ]] && [[ $INSTANCE != $INSTANCE_ID ]]; then
+  if [[ $LIFECYCLE == 'autoscaling:EC2_INSTANCE_TERMINATING' ]]; then
         echo "terminate_node: Found a shutdown event for $INSTANCE"
         TOKEN=$(echo $BODY | jq --raw-output '.LifecycleActionToken')
         HOOK=$(echo $BODY | jq --raw-output '.LifecycleHookName')
         ASG=$(echo $BODY | jq --raw-output '.AutoScalingGroupName')
 
         NODE_COUNT=$(docker node ls | wc -l | awk '{print $1-1}')
-        if [[ $NODE_COUNT -gt 1 ]]; then
+        if [[ $NODE_COUNT -gt 1 ]] && [[ $INSTANCE != $INSTANCE_ID ]]; then
           # Get the node id and type from its tag
           NODE_ID=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=node-id" --region $REGION --output=json | jq -r .Tags[0].Value)
           NODE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=swarm-node-type" --region $REGION --output=json | jq -r .Tags[0].Value)
@@ -37,9 +37,12 @@ for((i=0;i<$COUNT;i++)); do
             docker node demote $NODE_ID
           fi
           docker node update --availability drain $NODE_ID
-          docker node rm $NODE_ID
+          # Wait 30 seconds before attempting to remove the node
+          sleep 30
+          docker node rm --force $NODE_ID
           echo "terminate_node: Removed $NODE_ID from the swarm"
-        else
+          TERMINATED=$INSTANCE
+        elif [[ $NODE_COUNT -eq 1 ]]; then
           # We are the last node in the cluster so we force remove ourselves.
           echo "terminate_node: This is the last node in the cluster, leaving the swarm"
           docker swarm leave --force
@@ -60,21 +63,28 @@ for((i=0;i<$COUNT;i++)); do
               --region $REGION \
               --key '{"id":{"S": "worker_join_token"}}'
           echo "terminate_node: Done cleaning up the DynamoDB table"
+          TERMINATED=$INSTANCE
+        else
+          echo "terminate_node: Received signal for this node, will wait until another manager to terminate us"
         fi
-
-        echo "terminate_node: Delete the record from SQS"
-        aws sqs delete-message --region $REGION --queue-url $LIFECYCLE_QUEUE --receipt-handle $RECEIPT
-        echo "terminate_node: Finished deleting the sqs record."
-
-        # let autoscaler know it can continue with the termination.
-        echo "terminate_node: Notifying autoscaling that it can continue"
-        aws autoscaling complete-lifecycle-action --region $REGION --lifecycle-action-token $TOKEN --lifecycle-hook-name $HOOK --auto-scaling-group-name $ASG --lifecycle-action-result CONTINUE
-
-        echo "terminate_node: Finished handling of instance termination"
   elif [[ $LIFECYCLE != 'autoscaling:EC2_INSTANCE_TERMINATING' ]]; then
       # There is a testing message on the queue at start we don't need, remove it, so it doesn't clog queue in future.
       echo "terminate_node: Message $LIFECYCLE isn't one we care about, remove it."
       aws sqs delete-message --region $REGION --queue-url $LIFECYCLE_QUEUE --receipt-handle $RECEIPT
   fi
+
+  # If we removed the node from the swarm, then we remove the message and signal to shutdown
+  if [[ -n $TERMINATED ]]; then
+    echo "terminate_node: Delete the record from SQS"
+    aws sqs delete-message --region $REGION --queue-url $LIFECYCLE_QUEUE --receipt-handle $RECEIPT
+    echo "terminate_node: Finished deleting the sqs record."
+
+    # let autoscaler know it can continue with the termination.
+    echo "terminate_node: Notifying autoscaling that it can continue"
+    aws autoscaling complete-lifecycle-action --region $REGION --lifecycle-action-token $TOKEN --lifecycle-hook-name $HOOK --auto-scaling-group-name $ASG --lifecycle-action-result CONTINUE
+
+    echo "terminate_node: Finished handling of instance termination"
+  fi
+  TERMINATED=
 done
 echo "terminate_node: Done"

@@ -5,6 +5,11 @@ echo "terminate_node: Running..."
 export REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
+# sleep for a random time between 1 and 10 seconds
+# this is because this runs on all managers and we don't want to step on
+# each other
+sleep $[ ( $RANDOM % 10 )  + 1 ]
+
 # Read the messages from the termination lifecycle hook SQS queue.
 MESSAGES=$(aws sqs receive-message --queue-url $LIFECYCLE_QUEUE --max-number-of-messages 10 --wait-time-seconds 10 --region $REGION)
 COUNT=$(echo $MESSAGES | jq -r '.Messages | length')

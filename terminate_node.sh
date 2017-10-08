@@ -36,6 +36,7 @@ for((i=0;i<$COUNT;i++)); do
           if [ "$NODE_TYPE" == "manager" ]; then
             docker node demote $NODE_ID
           fi
+          docker node update --availability drain $NODE_ID
           docker node rm $NODE_ID
           echo "terminate_node: Removed $NODE_ID from the swarm"
         else

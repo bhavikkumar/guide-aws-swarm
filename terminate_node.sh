@@ -3,6 +3,7 @@
 # managers and workers from the swarm.
 echo "terminate_node: Running..."
 export REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 
 # Read the messages from the termination lifecycle hook SQS queue.
 MESSAGES=$(aws sqs receive-message --queue-url $LIFECYCLE_QUEUE --max-number-of-messages 10 --wait-time-seconds 10 --region $REGION)
@@ -18,8 +19,8 @@ for((i=0;i<$COUNT;i++)); do
   LIFECYCLE=$(echo $BODY | jq --raw-output '.LifecycleTransition')
   INSTANCE=$(echo $BODY | jq --raw-output '.EC2InstanceId')
 
-  # If it is a termination message we will handle it.
-  if [[ $LIFECYCLE == 'autoscaling:EC2_INSTANCE_TERMINATING' ]]; then
+  # If it is a termination message and its not myself, then we will handle it.
+  if [[ $LIFECYCLE == 'autoscaling:EC2_INSTANCE_TERMINATING' ]] && [[ $INSTANCE != $INSTANCE_ID ]]; then
         echo "terminate_node: Found a shutdown event for $INSTANCE"
         TOKEN=$(echo $BODY | jq --raw-output '.LifecycleActionToken')
         HOOK=$(echo $BODY | jq --raw-output '.LifecycleHookName')
@@ -29,7 +30,7 @@ for((i=0;i<$COUNT;i++)); do
         if [[ $NODE_COUNT -gt 1 ]]; then
           # Get the node id and type from its tag
           NODE_ID=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=node-id" --region $REGION --output=json | jq -r .Tags[0].Value)
-          NODE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=swarm-node-type" --region us-west-2 --output=json | jq -r .Tags[0].Value)
+          NODE_TYPE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$INSTANCE" "Name=key,Values=swarm-node-type" --region $REGION --output=json | jq -r .Tags[0].Value)
 
           echo "terminate_node: Removing $NODE_ID which is a $NODE_TYPE from the swarm"
           if [ "$NODE_TYPE" == "manager" ]; then

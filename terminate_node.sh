@@ -37,8 +37,8 @@ for((i=0;i<$COUNT;i++)); do
             docker node demote $NODE_ID
           fi
           docker node update --availability drain $NODE_ID
-          # Wait 30 seconds before attempting to remove the node
-          sleep 30
+          # Wait 10 seconds before attempting to remove the node
+          sleep 10
           docker node rm --force $NODE_ID
           echo "terminate_node: Removed $NODE_ID from the swarm"
           TERMINATED=$INSTANCE
@@ -64,8 +64,6 @@ for((i=0;i<$COUNT;i++)); do
               --key '{"id":{"S": "worker_join_token"}}'
           echo "terminate_node: Done cleaning up the DynamoDB table"
           TERMINATED=$INSTANCE
-        else
-          echo "terminate_node: Received signal for this node, will wait until another manager to terminate us"
         fi
   elif [[ $LIFECYCLE != 'autoscaling:EC2_INSTANCE_TERMINATING' ]]; then
       # There is a testing message on the queue at start we don't need, remove it, so it doesn't clog queue in future.

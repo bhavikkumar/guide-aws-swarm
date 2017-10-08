@@ -7,7 +7,7 @@ echo "reaper: Removing terminated instances which are unhealthy in the swarm"
 export REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 
 # Get the node ids of the unavailable managers
-DOWN_LIST=$(docker node inspect $(docker node ls --filter role=manager -q) | jq -r '.[] | select(.ManagerStatus.Reachability != "reachable") | .ManagerStatus.Addr | split(":")[0]')
+DOWN_LIST=$(docker node inspect $(docker node ls --filter role=manager -q) | jq -r '.[] | select(.ManagerStatus.Reachability != "reachable") | .ID')
 
 # there are no nodes down, exit now.
 if [ -z "$DOWN_LIST" ]; then

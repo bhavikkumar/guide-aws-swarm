@@ -2,6 +2,14 @@
 # this script removes any manager instances which have been terminated
 # but no message was recieved on the lifecycle queue. This is to keep the quorm
 # in a good state.
+
+# sleep for a random time between 1 and 60 seconds
+# this is because this runs on all managers and we don't want to step on
+# each other
+# we run on all managers incase the quorum gets messed up, and the current
+# leader is having issue.
+sleep $[ ( $RANDOM % 60 )  + 1 ]
+
 echo "reaper: Removing terminated instances which are unhealthy in the swarm"
 
 export REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)

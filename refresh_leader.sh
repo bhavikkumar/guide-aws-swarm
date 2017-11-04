@@ -19,8 +19,8 @@ if [[ "$IS_LEADER" == "true" ]]; then
             --item '{"id":{"S": "primary_manager"},"value": {"S":"'"$PRIVATE_IP"'"}}'
 
         # Just in case the join tokens have been rotated, we update them as well.
-        MANAGER_TOKEN=$(docker swarm join-token manager | grep token | awk '{ print $2 }')
-        WORKER_TOKEN=$(docker swarm join-token worker | grep token | awk '{ print $2 }')
+        MANAGER_TOKEN=$(docker swarm join-token manager | grep token | awk '{ print $5 }')
+        WORKER_TOKEN=$(docker swarm join-token worker | grep token | awk '{ print $5 }')
 
         aws dynamodb put-item \
             --table-name $DYNAMODB_TABLE \
